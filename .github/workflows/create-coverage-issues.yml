@@ -1,0 +1,195 @@
+name: Create Test Coverage Phase Issues
+
+on:
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  create-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Phase 4 — Config/Provider
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Phase 4: Config/Provider — Test Coverage',
+              body: `## Goal
+            Add missing test coverage for Config and Provider modules identified in [TEST_COVERAGE_PLAN.md](../blob/dev/TEST_COVERAGE_PLAN.md).
+
+            ## Already covered ✅
+
+            | Source File | Test File |
+            |---|---|
+            | \`config/config.ts\` | \`test/config/config.test.ts\` |
+            | \`config/markdown.ts\` | \`test/config/markdown.test.ts\` |
+            | \`config/tui.ts\` | \`test/config/tui.test.ts\` |
+            | \`config/paths.ts\` | \`test/config/paths.test.ts\` |
+            | \`config/tui-schema.ts\` | Covered by \`config/tui.test.ts\` |
+            | \`config/migrate-tui-config.ts\` | Covered by \`config/tui.test.ts\` |
+            | \`provider/provider.ts\` | \`test/provider/provider.test.ts\` |
+            | \`provider/auth.ts\` | \`test/provider/auth.test.ts\` |
+            | \`provider/transform.ts\` | \`test/provider/transform.test.ts\` |
+            | \`provider/models.ts\` | Covered by \`provider/provider.test.ts\` |
+            | \`provider/sdk/copilot/**\` | \`test/provider/copilot/\` |
+
+            ## TODO ❌
+
+            | Source File | Recommended Approach |
+            |---|---|
+            | \`provider/auth-service.ts\` | Test OAuth flow with mock auth server |
+            | \`provider/error.ts\` | Unit test error classes and messages |
+            | \`provider/schema.ts\` | Zod schema parse tests |
+
+            ## Methodology
+            - Tests use **Bun test** (\`bun:test\`)
+            - Run from \`packages/opencode\`: \`bun test\`
+            - Coverage: \`bun test --coverage\`
+            - No mocks unless I/O or network is unavoidable
+            `,
+              labels: ['test coverage'],
+            });
+
+      - name: Phase 5 — Session/Agent
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Phase 5: Session/Agent — Test Coverage',
+              body: `## Goal
+            Add missing test coverage for Session, Agent, and Permission modules identified in [TEST_COVERAGE_PLAN.md](../blob/dev/TEST_COVERAGE_PLAN.md).
+
+            ## Already covered ✅
+
+            | Source File | Test File |
+            |---|---|
+            | \`session/session.sql.ts\` | \`test/session/session.test.ts\` (implicitly) |
+            | \`session/message.ts\` | \`test/session/message-v2.test.ts\` |
+            | \`session/message-v2.ts\` | \`test/session/message-v2.test.ts\` |
+            | \`session/llm.ts\` | \`test/session/llm.test.ts\` |
+            | \`session/compaction.ts\` | \`test/session/compaction.test.ts\` |
+            | \`session/retry.ts\` | \`test/session/retry.test.ts\` |
+            | \`session/revert.ts\` | \`test/session/revert-compact.test.ts\` |
+            | \`session/instruction.ts\` | \`test/session/instruction.test.ts\` |
+            | \`session/prompt.ts\` | \`test/session/prompt.test.ts\` |
+            | \`session/status.ts\` | \`test/session/status.test.ts\` |
+            | \`session/todo.ts\` | \`test/session/todo.test.ts\` |
+            | \`agent/agent.ts\` | \`test/agent/agent.test.ts\` |
+            | \`permission/next.ts\` | \`test/permission/next.test.ts\` |
+            | \`permission/arity.ts\` | \`test/permission/arity.test.ts\` |
+
+            ## TODO ❌
+
+            | Source File | Recommended Approach |
+            |---|---|
+            | \`session/system.ts\` | Unit test \`SystemPrompt.provider()\` dispatch logic |
+            | \`session/summary.ts\` | Requires live AI model; use stub |
+            | \`session/processor.ts\` | Core agent loop; full integration test needed |
+
+            ## Methodology
+            - Tests use **Bun test** (\`bun:test\`)
+            - Run from \`packages/opencode\`: \`bun test\`
+            - Coverage: \`bun test --coverage\`
+            - No mocks unless I/O or network is unavoidable
+            `,
+              labels: ['test coverage'],
+            });
+
+      - name: Phase 6 — Server Routes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Phase 6: Server Routes — Test Coverage',
+              body: `## Goal
+            Add missing test coverage for Server route modules identified in [TEST_COVERAGE_PLAN.md](../blob/dev/TEST_COVERAGE_PLAN.md).
+
+            All server routes require a running Hono server instance. Use \`Server.createApp({})\` + \`fetch()\` pattern (already used in \`test/server/\`).
+
+            ## Already covered ✅
+
+            | Source File | Test File |
+            |---|---|
+            | \`server/server.ts\` | Multiple via \`test/server/\` |
+            | \`server/routes/session.ts\` | \`test/server/session-*.test.ts\` |
+            | \`server/routes/project.ts\` | \`test/server/project-*.test.ts\` |
+            | \`server/routes/global.ts\` | \`test/server/global-session-list.test.ts\` |
+
+            ## TODO ❌
+
+            | Route File | Test Needed |
+            |---|---|
+            | \`server/routes/config.ts\` | GET/PUT config endpoint test |
+            | \`server/routes/provider.ts\` | GET provider list test |
+            | \`server/routes/mcp.ts\` | GET MCP status test |
+            | \`server/routes/file.ts\` | GET file status test |
+            | \`server/routes/permission.ts\` | POST permission approve test |
+            | \`server/routes/question.ts\` | GET/POST question flow test |
+            | \`server/routes/pty.ts\` | WebSocket PTY session test |
+            | \`server/routes/tui.ts\` | TUI-specific endpoints |
+            | \`server/routes/experimental.ts\` | Experimental features |
+            | \`server/routes/workspace.ts\` | Workspace management |
+            | \`server/mdns.ts\` | mDNS discovery |
+            | \`server/error.ts\` | Error response formatting |
+
+            ## Methodology
+            - Tests use **Bun test** (\`bun:test\`)
+            - Run from \`packages/opencode\`: \`bun test\`
+            - Coverage: \`bun test --coverage\`
+            - Use \`Server.createApp({})\` + \`fetch()\` pattern for route tests
+            `,
+              labels: ['test coverage'],
+            });
+
+      - name: Phase 7 — CLI/LSP/MCP
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Phase 7: CLI/LSP/MCP — Test Coverage',
+              body: `## Goal
+            Add missing test coverage for CLI, LSP, MCP, and Plugin modules identified in [TEST_COVERAGE_PLAN.md](../blob/dev/TEST_COVERAGE_PLAN.md).
+
+            These modules are either integration-heavy or require external processes.
+
+            ## Already covered ✅
+
+            | Module | Test File |
+            |---|---|
+            | \`lsp/client.ts\` | \`test/lsp/client.test.ts\` |
+            | \`mcp/index.ts\` | \`test/mcp/\` |
+            | \`mcp/auth.ts\` | \`test/mcp/headers.test.ts\` |
+            | \`plugin/codex.ts\` | \`test/plugin/codex.test.ts\` |
+
+            ## TODO ❌
+
+            | Module | Strategy |
+            |---|---|
+            | \`cli/cmd/*.ts\` | Test command argument parsing in isolation (no process.exit) |
+            | \`lsp/language.ts\` | Unit test language ID mapping |
+            | \`plugin/copilot.ts\` | Integration test with mock Copilot auth |
+
+            ## Modules that cannot achieve 100% coverage
+
+            | Module | Reason |
+            |---|---|
+            | \`cli/cmd/tui/*.ts\` | TUI rendering requires terminal; visual test outside scope |
+
+            ## Methodology
+            - Tests use **Bun test** (\`bun:test\`)
+            - Run from \`packages/opencode\`: \`bun test\`
+            - Coverage: \`bun test --coverage\`
+            - No mocks unless I/O or network is unavoidable
+            `,
+              labels: ['test coverage'],
+            });
