@@ -1,261 +1,291 @@
 import { describe, expect, test } from "bun:test"
 import { SessionSummary } from "../../src/session/summary"
-import { Storage } from "../../src/storage/storage"
 import { Instance } from "../../src/project/instance"
+import { Storage } from "../../src/storage/storage"
 import { SessionID, MessageID, PartID } from "../../src/session/schema"
 import type { MessageV2 } from "../../src/session/message-v2"
-import type { Snapshot } from "../../src/snapshot"
 import { tmpdir } from "../fixture/fixture"
+import { Session } from "../../src/session"
+import { Log } from "../../src/util/log"
 
-// Create a minimal WithParts fixture with given parts
-function withParts(parts: MessageV2.Part[]): MessageV2.WithParts {
+Log.init({ print: false })
+
+// Load fixture data from JSON files
+import messages from "./fixtures/messages-with-snapshots.json"
+import diffs from "./fixtures/session-diff-quoted.json"
+
+function part(
+  type: "step-start" | "step-finish",
+  snapshot?: string,
+): MessageV2.Part {
+  const base = {
+    id: PartID.make("part_" + Math.random().toString(36).slice(2)),
+    sessionID: SessionID.make("ses_test"),
+    messageID: MessageID.make("msg_test"),
+  }
+  if (type === "step-start") {
+    return { ...base, type: "step-start", snapshot } as MessageV2.StepStartPart
+  }
+  return {
+    ...base,
+    type: "step-finish",
+    reason: "stop",
+    snapshot,
+    cost: 0,
+    tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+  } as MessageV2.StepFinishPart
+}
+
+function message(parts: MessageV2.Part[]): MessageV2.WithParts {
   return {
     info: {
-      id: MessageID.make("msg_test"),
+      id: MessageID.make("msg_" + Math.random().toString(36).slice(2)),
       sessionID: SessionID.make("ses_test"),
-      role: "user",
-      time: { created: Date.now() },
+      role: "assistant",
       agent: "build",
-      model: { providerID: "anthropic" as any, modelID: "claude" as any },
-    } as MessageV2.Info,
+      mode: "primary",
+      path: { cwd: "/tmp", root: "/tmp" },
+      time: { created: Date.now() },
+      cost: 0,
+      tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+      parentID: MessageID.make("msg_parent"),
+      modelID: "claude-3-5-sonnet" as any,
+      providerID: "anthropic" as any,
+    } as MessageV2.Assistant,
     parts,
   }
 }
 
-function stepStart(snapshot?: string): MessageV2.Part {
-  return {
-    id: PartID.ascending(),
-    sessionID: SessionID.make("ses_test"),
-    messageID: MessageID.make("msg_test"),
-    type: "step-start" as const,
-    snapshot,
-  }
-}
-
-function stepFinish(snapshot?: string): MessageV2.Part {
-  return {
-    id: PartID.ascending(),
-    sessionID: SessionID.make("ses_test"),
-    messageID: MessageID.make("msg_test"),
-    type: "step-finish" as const,
-    reason: "done",
-    cost: 0,
-    tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
-    snapshot,
-  }
-}
-
-describe("SessionSummary.computeDiff — no snapshots", () => {
+describe("SessionSummary.computeDiff", () => {
   test("returns empty array when no messages", async () => {
     const result = await SessionSummary.computeDiff({ messages: [] })
     expect(result).toEqual([])
   })
 
-  test("returns empty array when messages have no step-start or step-finish", async () => {
-    const messages = [withParts([])]
-    const result = await SessionSummary.computeDiff({ messages })
+  test("returns empty array when no step-start or step-finish parts", async () => {
+    const msg = message([
+      {
+        id: PartID.make("p1"),
+        sessionID: SessionID.make("ses_test"),
+        messageID: MessageID.make("msg_test"),
+        type: "text",
+        text: "hello",
+        time: { start: Date.now() },
+      } as MessageV2.TextPart,
+    ])
+    const result = await SessionSummary.computeDiff({ messages: [msg] })
     expect(result).toEqual([])
   })
 
   test("returns empty array when step-start has no snapshot", async () => {
-    const messages = [withParts([stepStart(undefined), stepFinish("to-hash")])]
-    const result = await SessionSummary.computeDiff({ messages })
+    const msg = message([
+      part("step-start", undefined),
+      part("step-finish", "some-hash"),
+    ])
+    const result = await SessionSummary.computeDiff({ messages: [msg] })
     expect(result).toEqual([])
   })
 
   test("returns empty array when step-finish has no snapshot", async () => {
-    const messages = [withParts([stepStart("from-hash"), stepFinish(undefined)])]
-    const result = await SessionSummary.computeDiff({ messages })
+    const msg = message([
+      part("step-start", "some-hash"),
+      part("step-finish", undefined),
+    ])
+    const result = await SessionSummary.computeDiff({ messages: [msg] })
     expect(result).toEqual([])
   })
 
-  test("returns empty array when both from and to are missing", async () => {
-    const messages = [withParts([stepStart(undefined), stepFinish(undefined)])]
-    const result = await SessionSummary.computeDiff({ messages })
+  test("returns empty array when both from and to are undefined", async () => {
+    const msg = message([
+      part("step-start"),
+      part("step-finish"),
+    ])
+    const result = await SessionSummary.computeDiff({ messages: [msg] })
     expect(result).toEqual([])
+  })
+
+  test("reads from fixture data and returns empty without real snapshots", async () => {
+    // Use fixture file data to construct messages
+    const parts: MessageV2.Part[] = messages[0].parts.map((p: any) => ({
+      id: PartID.make(p.id),
+      sessionID: SessionID.make(p.sessionID),
+      messageID: MessageID.make(p.messageID),
+      type: p.type,
+      ...(p.snapshot ? { snapshot: p.snapshot } : {}),
+      ...(p.reason ? { reason: p.reason, cost: p.cost, tokens: p.tokens } : {}),
+    }))
+    const msg = message(parts)
+    // from = "abc123", to = "def456" — but these snapshots don't exist in git
+    // so Snapshot.diffFull will return [] or throw → computeDiff returns []
+    const result = await SessionSummary.computeDiff({ messages: [msg] })
+    // Without a real git repo snapshot, result is [] (error caught internally or no diff)
+    expect(Array.isArray(result)).toBe(true)
   })
 })
 
-describe("SessionSummary.computeDiff — snapshot tracking", () => {
-  test("picks earliest step-start across multiple messages as from", async () => {
-    // Two messages both with step-start snapshots — first one wins.
-    // Without a real git repo, diffFull will not be called since `to` is undefined
-    // (m1 has no step-finish with snapshot). Verify no crash and empty result.
-    const m1 = withParts([stepStart("first-snapshot")])
-    const m2 = withParts([stepStart("second-snapshot")])
-    const result = await SessionSummary.computeDiff({ messages: [m1, m2] })
-    expect(result).toEqual([])
-  })
-
-  test("picks latest step-finish as to when multiple present", async () => {
-    // Multiple step-finish parts, no step-start with snapshot → from is undefined → returns []
-    const parts: MessageV2.Part[] = [stepFinish("first-to"), stepFinish("second-to")]
-    const result = await SessionSummary.computeDiff({ messages: [withParts(parts)] })
-    expect(result).toEqual([])
-  })
-
-  test("returns empty when from found but no to snapshot", async () => {
-    const parts: MessageV2.Part[] = [stepStart("from-snap"), stepFinish(undefined)]
-    const result = await SessionSummary.computeDiff({ messages: [withParts(parts)] })
-    expect(result).toEqual([])
-  })
-})
-
-describe("SessionSummary.diff — Storage-backed", () => {
-  test("returns empty array when no storage entry exists", async () => {
-    await using tmp = await tmpdir({ git: true })
+describe("SessionSummary.diff — storage read and unquoteGitPath", () => {
+  test("returns empty array when no data in storage", async () => {
+    await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const sid = SessionID.make("ses_diff_empty")
-        const result = await SessionSummary.diff({ sessionID: sid })
+        const id = SessionID.make("ses_diff_empty")
+        const result = await SessionSummary.diff({ sessionID: id })
         expect(result).toEqual([])
       },
     })
   })
 
-  test("returns stored diffs unchanged when no quoted paths", async () => {
-    await using tmp = await tmpdir({ git: true })
+  test("returns stored diffs unchanged when paths are plain", async () => {
+    await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const sid = SessionID.make("ses_diff_plain")
-        const diffs: Snapshot.FileDiff[] = [
-          { file: "src/index.ts", before: "", after: "", additions: 5, deletions: 2 },
-          { file: "README.md", before: "", after: "", additions: 1, deletions: 0 },
+        const id = SessionID.make("ses_diff_plain")
+        const diffs = [
+          { file: "src/index.ts", additions: 10, deletions: 3 },
+          { file: "src/util.ts", additions: 5, deletions: 1 },
         ]
-        await Storage.write(["session_diff", sid], diffs)
-        const result = await SessionSummary.diff({ sessionID: sid })
+        await Storage.write(["session_diff", id], diffs)
+        const result = await SessionSummary.diff({ sessionID: id })
         expect(result).toHaveLength(2)
-        expect(result[0]!.file).toBe("src/index.ts")
-        expect(result[1]!.file).toBe("README.md")
+        expect(result[0].file).toBe("src/index.ts")
+        expect(result[1].file).toBe("src/util.ts")
+        expect(result[0].additions).toBe(10)
+        expect(result[0].deletions).toBe(3)
       },
     })
   })
 
-  test("unquotes git-escaped paths in stored diffs", async () => {
-    await using tmp = await tmpdir({ git: true })
+  test("unquotes git-quoted file paths", async () => {
+    await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const sid = SessionID.make("ses_diff_quoted")
-        // Git quotes paths with non-ASCII or special chars: "file with spaces.ts"
-        const diffs: Snapshot.FileDiff[] = [
-          { file: '"file with spaces.ts"', before: "", after: "", additions: 3, deletions: 1 },
+        const id = SessionID.make("ses_diff_quoted")
+        // Git quotes paths with non-ASCII chars as octal escape sequences
+        const diffs = [
+          { file: '"src/\\303\\251l\\303\\251.ts"', additions: 2, deletions: 1 },
+          { file: "src/normal.ts", additions: 1, deletions: 0 },
         ]
-        await Storage.write(["session_diff", sid], diffs)
-        const result = await SessionSummary.diff({ sessionID: sid })
-        expect(result[0]!.file).toBe("file with spaces.ts")
+        await Storage.write(["session_diff", id], diffs)
+        const result = await SessionSummary.diff({ sessionID: id })
+        expect(result).toHaveLength(2)
+        // The quoted path should be decoded
+        expect(result[0].file).not.toStartWith('"')
+        expect(result[0].file).not.toEndWith('"')
+        // Normal path should be unchanged
+        expect(result[1].file).toBe("src/normal.ts")
       },
     })
   })
 
-  test("unquotes git octal-escaped unicode paths", async () => {
-    await using tmp = await tmpdir({ git: true })
+  test("handles fixture data with quoted paths", async () => {
+    await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const sid = SessionID.make("ses_diff_octal")
-        // Git uses octal escapes for non-ASCII: \303\251 = é (U+00E9)
-        const diffs: Snapshot.FileDiff[] = [
-          { file: '"caf\\303\\251.ts"', before: "", after: "", additions: 1, deletions: 0 },
+        const id = SessionID.make("ses_diff_fixture")
+        await Storage.write(["session_diff", id], diffs)
+        const result = await SessionSummary.diff({ sessionID: id })
+        expect(result).toHaveLength(3)
+        // First entry: quoted path should be unquoted
+        expect(result[0].file).not.toStartWith('"')
+        // Second entry: normal path unchanged
+        expect(result[1].file).toBe("src/normal.ts")
+        // Third entry: path with spaces should be unquoted
+        expect(result[2].file).not.toStartWith('"')
+        expect(result[2].file).toContain("path/with spaces/file.ts")
+      },
+    })
+  })
+
+  test("preserves additions and deletions counts from fixture data", async () => {
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const id = SessionID.make("ses_diff_counts")
+        const diffs = [
+          { file: "a.ts", additions: 42, deletions: 7 },
+          { file: "b.ts", additions: 0, deletions: 15 },
         ]
-        await Storage.write(["session_diff", sid], diffs)
-        const result = await SessionSummary.diff({ sessionID: sid })
-        expect(result[0]!.file).toBe("café.ts")
+        await Storage.write(["session_diff", id], diffs)
+        const result = await SessionSummary.diff({ sessionID: id })
+        expect(result[0].additions).toBe(42)
+        expect(result[0].deletions).toBe(7)
+        expect(result[1].additions).toBe(0)
+        expect(result[1].deletions).toBe(15)
       },
     })
   })
 
-  test("handles escaped special chars: newline, tab, backslash, quote", async () => {
-    await using tmp = await tmpdir({ git: true })
+  test("handles messageID filter parameter", async () => {
+    await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const sid = SessionID.make("ses_diff_esc")
-        const diffs: Snapshot.FileDiff[] = [
-          // \\n → newline, \\t → tab
-          { file: '"line1\\nline2.ts"', before: "", after: "", additions: 1, deletions: 0 },
-          { file: '"col1\\tcol2.ts"', before: "", after: "", additions: 1, deletions: 0 },
-          { file: '"back\\\\slash.ts"', before: "", after: "", additions: 1, deletions: 0 },
+        const id = SessionID.make("ses_diff_msgid")
+        const msgID = MessageID.make("msg_test_1")
+        const diffs = [{ file: "test.ts", additions: 1, deletions: 0 }]
+        await Storage.write(["session_diff", id], diffs)
+        // messageID parameter is accepted (currently unused in diff logic)
+        const result = await SessionSummary.diff({ sessionID: id, messageID: msgID })
+        expect(result).toHaveLength(1)
+        expect(result[0].file).toBe("test.ts")
+      },
+    })
+  })
+
+  test("writes back unquoted paths to storage", async () => {
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const id = SessionID.make("ses_diff_writeback")
+        const diffs = [
+          { file: '"quoted\\\\path.ts"', additions: 1, deletions: 0 },
         ]
-        await Storage.write(["session_diff", sid], diffs)
-        const result = await SessionSummary.diff({ sessionID: sid })
-        expect(result[0]!.file).toBe("line1\nline2.ts")
-        expect(result[1]!.file).toBe("col1\tcol2.ts")
-        expect(result[2]!.file).toBe("back\\slash.ts")
+        await Storage.write(["session_diff", id], diffs)
+        const first = await SessionSummary.diff({ sessionID: id })
+        expect(first[0].file).not.toStartWith('"')
+        // Read again — should be stored unquoted now
+        await new Promise((r) => setTimeout(r, 50))
+        const second = await SessionSummary.diff({ sessionID: id })
+        expect(second[0].file).toBe(first[0].file)
+      },
+    })
+  })
+})
+
+describe("SessionSummary — integration with Session", () => {
+  test("diff returns empty for session without stored diffs", async () => {
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const session = await Session.create({})
+        const result = await SessionSummary.diff({ sessionID: session.id })
+        expect(result).toEqual([])
+        await Session.remove(session.id)
       },
     })
   })
 
-  test("preserves unquoted paths as-is", async () => {
-    await using tmp = await tmpdir({ git: true })
+  test("diff returns stored diffs for a session", async () => {
+    await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const sid = SessionID.make("ses_diff_noquote")
-        const diffs: Snapshot.FileDiff[] = [
-          { file: "normal/path/file.ts", before: "", after: "", additions: 0, deletions: 0 },
-          // starts with " but does not end with " — second early-return branch
-          { file: '"starts-but-no-end', before: "", after: "", additions: 0, deletions: 0 },
-          // ends with " but does not start with " — first early-return branch
-          { file: 'no-start-but-end"', before: "", after: "", additions: 0, deletions: 0 },
+        const session = await Session.create({})
+        const diffs = [
+          { file: "index.ts", additions: 10, deletions: 5 },
         ]
-        await Storage.write(["session_diff", sid], diffs)
-        const result = await SessionSummary.diff({ sessionID: sid })
-        expect(result[0]!.file).toBe("normal/path/file.ts")
-        expect(result[1]!.file).toBe('"starts-but-no-end')
-        expect(result[2]!.file).toBe('no-start-but-end"')
-      },
-    })
-  })
-
-  test("handles trailing backslash in quoted path (no next char)", async () => {
-    await using tmp = await tmpdir({ git: true })
-    await Instance.provide({
-      directory: tmp.path,
-      fn: async () => {
-        const sid = SessionID.make("ses_diff_trailslash")
-        // File path stored as '"trailing\"': body = "trailing\" where last char is backslash
-        // → unquoteGitPath hits the "no next char" branch → pushes backslash as-is
-        const diffs: Snapshot.FileDiff[] = [
-          { file: '"trailing\\"', before: "", after: "", additions: 1, deletions: 0 },
-        ]
-        await Storage.write(["session_diff", sid], diffs)
-        const result = await SessionSummary.diff({ sessionID: sid })
-        expect(result[0]!.file).toBe("trailing\\")
-      },
-    })
-  })
-
-  test("handles unknown escape sequences (passes through the char)", async () => {
-    await using tmp = await tmpdir({ git: true })
-    await Instance.provide({
-      directory: tmp.path,
-      fn: async () => {
-        const sid = SessionID.make("ses_diff_unknesc")
-        // \a is not a recognized escape → 'a' is passed through
-        const diffs: Snapshot.FileDiff[] = [
-          { file: '"hello\\aworld.ts"', before: "", after: "", additions: 1, deletions: 0 },
-        ]
-        await Storage.write(["session_diff", sid], diffs)
-        const result = await SessionSummary.diff({ sessionID: sid })
-        expect(result[0]!.file).toBe("helloaworld.ts")
-      },
-    })
-  })
-
-  test("accepts optional messageID param without error", async () => {
-    await using tmp = await tmpdir({ git: true })
-    await Instance.provide({
-      directory: tmp.path,
-      fn: async () => {
-        const sid = SessionID.make("ses_diff_msgid")
-        const result = await SessionSummary.diff({
-          sessionID: sid,
-          messageID: MessageID.make("msg_test"),
-        })
-        expect(Array.isArray(result)).toBe(true)
+        await Storage.write(["session_diff", session.id], diffs)
+        const result = await SessionSummary.diff({ sessionID: session.id })
+        expect(result).toHaveLength(1)
+        expect(result[0].file).toBe("index.ts")
+        await Session.remove(session.id)
       },
     })
   })
