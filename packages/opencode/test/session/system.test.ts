@@ -3,27 +3,6 @@ import { SystemPrompt } from "../../src/session/system"
 import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
 import type { Provider } from "../../src/provider/provider"
-
-function model(id: string): Provider.Model {
-  return {
-    id,
-    api: { id, npm: "@ai-sdk/openai" },
-    providerID: "test",
-    name: id,
-    capabilities: {
-      toolcall: true,
-      attachment: false,
-      reasoning: false,
-      temperature: true,
-      input: { text: true, image: false, audio: false, video: false, pdf: false },
-      output: { text: true, image: false, audio: false, video: false, pdf: false },
-      interleaved: false,
-    },
-    cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
-    limit: { context: 128000, output: 4096 },
-    options: {},
-    headers: {},
-    status: "active",
 import { ModelID, ProviderID } from "../../src/provider/schema"
 
 function model(id: string): Provider.Model {
