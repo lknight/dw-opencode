@@ -89,4 +89,56 @@ describe("tool.ls execute", () => {
       },
     })
   })
+
+  test("title is relative path from worktree", async () => {
+    await using tmp = await tmpdir({ git: true })
+    const subdir = path.join(tmp.path, "src")
+    await fs.mkdir(subdir)
+    await fs.writeFile(path.join(subdir, "a.ts"), "")
+
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await ListTool.init()
+        const result = await tool.execute({ path: subdir }, ctx)
+        expect(result.title).toBe("src")
+      },
+    })
+  })
+
+  test("ignore param excludes matched files", async () => {
+    await using tmp = await tmpdir({ git: true })
+    await fs.writeFile(path.join(tmp.path, "include.ts"), "")
+    await fs.writeFile(path.join(tmp.path, "exclude.log"), "")
+
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await ListTool.init()
+        const result = await tool.execute({ path: tmp.path, ignore: ["*.log"] }, ctx)
+        expect(result.output).toContain("include.ts")
+        expect(result.output).not.toContain("exclude.log")
+      },
+    })
+  })
+
+  test("sends list permission request", async () => {
+    await using tmp = await tmpdir({ git: true })
+    await fs.writeFile(path.join(tmp.path, "file.ts"), "")
+    const requests: any[] = []
+
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await ListTool.init()
+        await tool.execute({ path: tmp.path }, { ...ctx, ask: async (req) => { requests.push(req) } })
+        expect(requests.some((r) => r.permission === "list")).toBe(true)
+      },
+    })
+  })
+
+  test("tool id is 'list'", () => {
+    expect(ListTool.id).toBe("list")
+  })
 })
+

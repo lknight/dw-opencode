@@ -67,4 +67,75 @@ describe("tool.multiedit", () => {
       },
     })
   })
+
+  test("title is the relative path from worktree", async () => {
+    await using tmp = await tmpdir({ git: true })
+    const filepath = path.join(tmp.path, "named.ts")
+    await fs.writeFile(filepath, "const a = 1\n")
+
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await MultiEditTool.init()
+        const result = await tool.execute(
+          {
+            filePath: filepath,
+            edits: [{ filePath: filepath, oldString: "const a = 1", newString: "const a = 2" }],
+          },
+          ctx,
+        )
+        expect(result.title).toBe("named.ts")
+      },
+    })
+  })
+
+  test("output is from the last edit", async () => {
+    await using tmp = await tmpdir({ git: true })
+    const filepath = path.join(tmp.path, "multi.ts")
+    await fs.writeFile(filepath, "const a = 1\nconst b = 2\nconst c = 3\n")
+
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await MultiEditTool.init()
+        const result = await tool.execute(
+          {
+            filePath: filepath,
+            edits: [
+              { filePath: filepath, oldString: "const a = 1", newString: "const a = 10" },
+              { filePath: filepath, oldString: "const b = 2", newString: "const b = 20" },
+              { filePath: filepath, oldString: "const c = 3", newString: "const c = 30" },
+            ],
+          },
+          ctx,
+        )
+        // output must be a string (from the edit tool output of the last edit)
+        expect(typeof result.output).toBe("string")
+        expect(result.metadata.results).toHaveLength(3)
+      },
+    })
+  })
+
+  test("replaceAll replaces all occurrences", async () => {
+    await using tmp = await tmpdir({ git: true })
+    const filepath = path.join(tmp.path, "replace-all.ts")
+    await fs.writeFile(filepath, "foo foo foo\n")
+
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await MultiEditTool.init()
+        await tool.execute(
+          {
+            filePath: filepath,
+            edits: [{ filePath: filepath, oldString: "foo", newString: "bar", replaceAll: true }],
+          },
+          ctx,
+        )
+        const content = await fs.readFile(filepath, "utf-8")
+        expect(content).toBe("bar bar bar\n")
+      },
+    })
+  })
 })
+

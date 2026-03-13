@@ -17,39 +17,57 @@ const ctx = {
 }
 
 describe("tool.invalid", () => {
-  test("execute returns error message with param error", async () => {
+  test("title is always 'Invalid Tool'", async () => {
     await Instance.provide({
       directory: projectRoot,
       fn: async () => {
         const tool = await InvalidTool.init()
-        const result = await tool.execute(
-          {
-            tool: "bash",
-            error: "missing required field",
-          },
-          ctx,
-        )
+        const result = await tool.execute({ tool: "bash", error: "missing required field" }, ctx)
         expect(result.title).toBe("Invalid Tool")
+      },
+    })
+  })
+
+  test("output contains the error message", async () => {
+    await Instance.provide({
+      directory: projectRoot,
+      fn: async () => {
+        const tool = await InvalidTool.init()
+        const result = await tool.execute({ tool: "bash", error: "missing required field" }, ctx)
         expect(result.output).toContain("missing required field")
       },
     })
   })
 
-  test("execute includes error in output", async () => {
+  test("output contains error for different tools", async () => {
     await Instance.provide({
       directory: projectRoot,
       fn: async () => {
         const tool = await InvalidTool.init()
-        const result = await tool.execute(
-          {
-            tool: "write",
-            error: "bad argument",
-          },
-          ctx,
-        )
+        const result = await tool.execute({ tool: "write", error: "bad argument" }, ctx)
         expect(result.output).toContain("bad argument")
-        expect(result.metadata).toBeDefined()
       },
     })
   })
+
+  test("metadata is an empty object", async () => {
+    await Instance.provide({
+      directory: projectRoot,
+      fn: async () => {
+        const tool = await InvalidTool.init()
+        const result = await tool.execute({ tool: "grep", error: "invalid regex" }, ctx)
+        expect(result.metadata).toEqual({})
+      },
+    })
+  })
+
+  test("tool id is 'invalid'", () => {
+    expect(InvalidTool.id).toBe("invalid")
+  })
+
+  test("description is 'Do not use'", async () => {
+    const info = await InvalidTool.init()
+    expect(info.description).toBe("Do not use")
+  })
 })
+
