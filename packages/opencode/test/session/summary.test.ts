@@ -11,8 +11,8 @@ import { Log } from "../../src/util/log"
 Log.init({ print: false })
 
 // Load fixture data from JSON files
-import messagesWithSnapshots from "./fixtures/messages-with-snapshots.json"
-import sessionDiffQuoted from "./fixtures/session-diff-quoted.json"
+import messages from "./fixtures/messages-with-snapshots.json"
+import diffs from "./fixtures/session-diff-quoted.json"
 
 function part(
   type: "step-start" | "step-finish",
@@ -106,7 +106,7 @@ describe("SessionSummary.computeDiff", () => {
 
   test("reads from fixture data and returns empty without real snapshots", async () => {
     // Use fixture file data to construct messages
-    const parts: MessageV2.Part[] = messagesWithSnapshots[0].parts.map((p: any) => ({
+    const parts: MessageV2.Part[] = messages[0].parts.map((p: any) => ({
       id: PartID.make(p.id),
       sessionID: SessionID.make(p.sessionID),
       messageID: MessageID.make(p.messageID),
@@ -186,7 +186,7 @@ describe("SessionSummary.diff — storage read and unquoteGitPath", () => {
       directory: tmp.path,
       fn: async () => {
         const id = SessionID.make("ses_diff_fixture")
-        await Storage.write(["session_diff", id], sessionDiffQuoted)
+        await Storage.write(["session_diff", id], diffs)
         const result = await SessionSummary.diff({ sessionID: id })
         expect(result).toHaveLength(3)
         // First entry: quoted path should be unquoted

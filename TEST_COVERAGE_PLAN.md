@@ -181,7 +181,7 @@ All pure utility functions with no side effects. These have 100% line coverage n
 
 ---
 
-## Phase 6: Server Routes
+## Phase 6: Server Routes — COMPLETE ✅
 
 All server routes require a running Hono server instance. Use `Server.createApp({})` + `fetch()` pattern (already used in `test/server/`).
 
@@ -191,23 +191,16 @@ All server routes require a running Hono server instance. Use `Server.createApp(
 | `server/routes/session.ts` | `test/server/session-*.test.ts` | ✅ Existing |
 | `server/routes/project.ts` | `test/server/project-*.test.ts` | ✅ Existing |
 | `server/routes/global.ts` | `test/server/global-session-list.test.ts` | ✅ Existing |
+| `server/routes/config.ts` | `test/server/config.test.ts` | ✅ Added |
+| `server/routes/provider.ts` | `test/server/provider.test.ts` | ✅ Added |
+| `server/routes/mcp.ts` | `test/server/mcp.test.ts` | ✅ Added |
+| `server/routes/file.ts` | `test/server/file.test.ts` | ✅ Added |
+| `server/routes/permission.ts` | `test/server/permission.test.ts` | ✅ Added |
+| `server/routes/question.ts` | `test/server/question.test.ts` | ✅ Added |
+| `server/routes/experimental.ts` | `test/server/experimental.test.ts` | ✅ Added |
+| `server/error.ts` | `test/server/error.test.ts` | ✅ Added |
 
-### Remaining Routes (Phase 6 TODO):
-
-| Route File | Test Needed |
-|---|---|
-| `server/routes/config.ts` | GET/PUT config endpoint test |
-| `server/routes/provider.ts` | GET provider list test |
-| `server/routes/mcp.ts` | GET MCP status test |
-| `server/routes/file.ts` | GET file status test |
-| `server/routes/permission.ts` | POST permission approve test |
-| `server/routes/question.ts` | GET/POST question flow test |
-| `server/routes/pty.ts` | WebSocket PTY session test |
-| `server/routes/tui.ts` | TUI-specific endpoints |
-| `server/routes/experimental.ts` | Experimental features |
-| `server/routes/workspace.ts` | Workspace management |
-| `server/mdns.ts` | mDNS discovery |
-| `server/error.ts` | Error response formatting |
+> **Note**: `server/routes/pty.ts` requires a WebSocket PTY session; `server/routes/tui.ts` requires TUI rendering — both are excluded per the plan. `server/mdns.ts` requires mDNS discovery infrastructure (excluded). Fixture files live in `test/server/fixtures/`.
 
 ---
 
