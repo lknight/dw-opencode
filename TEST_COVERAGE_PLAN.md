@@ -150,7 +150,7 @@ All pure utility functions with no side effects. These have 100% line coverage n
 
 ---
 
-## Phase 5: Session, Agent, Permission — LARGELY COVERED
+## Phase 5: Session, Agent, Permission — COMPLETE ✅
 
 | Source File | Test File | Status |
 |---|---|---|
@@ -171,11 +171,13 @@ All pure utility functions with no side effects. These have 100% line coverage n
 
 ### Remaining Session (Phase 5 TODO):
 
-| Source File | Recommended Approach |
-|---|---|
-| `session/system.ts` | Unit test `SystemPrompt.provider()` dispatch logic |
-| `session/summary.ts` | Requires live AI model; use stub |
-| `session/processor.ts` | Core agent loop; full integration test needed |
+| Source File | Test File | Status |
+|---|---|---|
+| `session/system.ts` | `test/session/system.test.ts` | ✅ Added |
+| `session/summary.ts` | `test/session/summary.test.ts` | ✅ Added |
+| `session/processor.ts` | `test/session/processor.test.ts` | ✅ Added |
+
+> **Note**: `session/processor.ts` tests cover `create()` structure and `partFromToolCall()`. Full `process()` integration tests require a live AI stream and are excluded per the plan. `session/summary.ts` tests cover `computeDiff()` and `diff()` including `unquoteGitPath` via fixture JSON data. Fixture files live in `test/session/fixtures/`.
 
 ---
 
