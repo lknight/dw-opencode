@@ -10,6 +10,26 @@ jobs:
   create-issues:
     runs-on: ubuntu-latest
     steps:
+      - name: Ensure label exists
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'test coverage',
+              });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'test coverage',
+                color: '0075ca',
+                description: 'Improving test coverage',
+              });
+            }
+
       - name: Phase 4 — Config/Provider
         uses: actions/github-script@v7
         with:
@@ -19,7 +39,7 @@ jobs:
               repo: context.repo.repo,
               title: 'Phase 4: Config/Provider — Test Coverage',
               body: `## Goal
-            Add missing test coverage for Config and Provider modules identified in [TEST_COVERAGE_PLAN.md](../blob/dev/TEST_COVERAGE_PLAN.md).
+            Add missing test coverage for Config and Provider modules identified in [TEST_COVERAGE_PLAN.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/dev/TEST_COVERAGE_PLAN.md).
 
             ## Already covered ✅
 
@@ -63,7 +83,7 @@ jobs:
               repo: context.repo.repo,
               title: 'Phase 5: Session/Agent — Test Coverage',
               body: `## Goal
-            Add missing test coverage for Session, Agent, and Permission modules identified in [TEST_COVERAGE_PLAN.md](../blob/dev/TEST_COVERAGE_PLAN.md).
+            Add missing test coverage for Session, Agent, and Permission modules identified in [TEST_COVERAGE_PLAN.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/dev/TEST_COVERAGE_PLAN.md).
 
             ## Already covered ✅
 
@@ -110,7 +130,7 @@ jobs:
               repo: context.repo.repo,
               title: 'Phase 6: Server Routes — Test Coverage',
               body: `## Goal
-            Add missing test coverage for Server route modules identified in [TEST_COVERAGE_PLAN.md](../blob/dev/TEST_COVERAGE_PLAN.md).
+            Add missing test coverage for Server route modules identified in [TEST_COVERAGE_PLAN.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/dev/TEST_COVERAGE_PLAN.md).
 
             All server routes require a running Hono server instance. Use \`Server.createApp({})\` + \`fetch()\` pattern (already used in \`test/server/\`).
 
@@ -158,7 +178,7 @@ jobs:
               repo: context.repo.repo,
               title: 'Phase 7: CLI/LSP/MCP — Test Coverage',
               body: `## Goal
-            Add missing test coverage for CLI, LSP, MCP, and Plugin modules identified in [TEST_COVERAGE_PLAN.md](../blob/dev/TEST_COVERAGE_PLAN.md).
+            Add missing test coverage for CLI, LSP, MCP, and Plugin modules identified in [TEST_COVERAGE_PLAN.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/dev/TEST_COVERAGE_PLAN.md).
 
             These modules are either integration-heavy or require external processes.
 
