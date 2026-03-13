@@ -1,0 +1,26 @@
+[
+  {
+    "file": "\"src/\\321\\202\\320\\265\\321\\201\\321\\202.ts\"",
+    "before": "sha-before-1",
+    "after": "sha-after-1",
+    "additions": 5,
+    "deletions": 2,
+    "status": "modified"
+  },
+  {
+    "file": "src/normal.ts",
+    "before": "sha-before-2",
+    "after": "sha-after-2",
+    "additions": 3,
+    "deletions": 1,
+    "status": "modified"
+  },
+  {
+    "file": "\"path/with spaces/file.ts\"",
+    "before": "",
+    "after": "sha-after-3",
+    "additions": 1,
+    "deletions": 0,
+    "status": "added"
+  }
+]
