@@ -124,7 +124,7 @@ All pure utility functions with no side effects. These have 100% line coverage n
 
 ---
 
-## Phase 4: Config & Provider Modules
+## Phase 4: Config & Provider Modules — COMPLETE ✅
 
 | Source File | Test File | Status |
 |---|---|---|
@@ -139,14 +139,9 @@ All pure utility functions with no side effects. These have 100% line coverage n
 | `provider/transform.ts` | `test/provider/transform.test.ts` | ✅ Existing |
 | `provider/models.ts` | Covered by `provider/provider.test.ts` | ✅ Implicit |
 | `provider/sdk/copilot/**` | `test/provider/copilot/` | ✅ Existing |
-
-### Remaining (Phase 4 TODO):
-
-| Source File | Recommended Approach |
-|---|---|
-| `provider/auth-service.ts` | Test OAuth flow with mock auth server |
-| `provider/error.ts` | Unit test error classes and messages |
-| `provider/schema.ts` | Zod schema parse tests |
+| `provider/auth-service.ts` | `test/provider/auth-service.test.ts` | ✅ Added |
+| `provider/error.ts` | `test/provider/error.test.ts` | ✅ Added |
+| `provider/schema.ts` | `test/provider/schema.test.ts` | ✅ Added |
 
 ---
 
