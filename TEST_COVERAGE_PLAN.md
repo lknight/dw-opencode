@@ -124,7 +124,7 @@ All pure utility functions with no side effects. These have 100% line coverage n
 
 ---
 
-## Phase 4: Config & Provider Modules
+## Phase 4: Config & Provider Modules — COMPLETE ✅
 
 | Source File | Test File | Status |
 |---|---|---|
@@ -139,14 +139,9 @@ All pure utility functions with no side effects. These have 100% line coverage n
 | `provider/transform.ts` | `test/provider/transform.test.ts` | ✅ Existing |
 | `provider/models.ts` | Covered by `provider/provider.test.ts` | ✅ Implicit |
 | `provider/sdk/copilot/**` | `test/provider/copilot/` | ✅ Existing |
-
-### Remaining (Phase 4 TODO):
-
-| Source File | Recommended Approach |
-|---|---|
-| `provider/auth-service.ts` | Test OAuth flow with mock auth server |
-| `provider/error.ts` | Unit test error classes and messages |
-| `provider/schema.ts` | Zod schema parse tests |
+| `provider/auth-service.ts` | `test/provider/auth-service.test.ts` | ✅ Added |
+| `provider/error.ts` | `test/provider/error.test.ts` | ✅ Added |
+| `provider/schema.ts` | `test/provider/schema.test.ts` | ✅ Added |
 
 ---
 
@@ -168,17 +163,6 @@ All pure utility functions with no side effects. These have 100% line coverage n
 | `agent/agent.ts` | `test/agent/agent.test.ts` | ✅ Existing |
 | `permission/next.ts` | `test/permission/next.test.ts` | ✅ Existing |
 | `permission/arity.ts` | `test/permission/arity.test.ts` | ✅ Existing |
-
-### Remaining Session (Phase 5 TODO):
-
-| Source File | Test File | Status |
-|---|---|---|
-| `session/system.ts` | `test/session/system.test.ts` | ✅ Added |
-| `session/summary.ts` | `test/session/summary.test.ts` | ✅ Added |
-| `session/processor.ts` | `test/session/processor.test.ts` | ✅ Added |
-
-> **Note**: `session/processor.ts` tests cover `create()` structure and `partFromToolCall()`. Full `process()` integration tests require a live AI stream and are excluded per the plan. `session/summary.ts` tests cover `computeDiff()` and `diff()` including `unquoteGitPath` via fixture JSON data. Fixture files live in `test/session/fixtures/`.
-
 ---
 
 ## Phase 6: Server Routes — COMPLETE ✅
@@ -204,19 +188,19 @@ All server routes require a running Hono server instance. Use `Server.createApp(
 
 ---
 
-## Phase 7: CLI, LSP, MCP, Plugin
+## Phase 7: CLI, LSP, MCP, Plugin — PARTIALLY COMPLETE
 
 These modules are either integration-heavy or require external processes.
 
-| Module | Strategy |
-|---|---|
-| `cli/cmd/*.ts` | Test command argument parsing in isolation (no process.exit) |
-| `lsp/client.ts` | `test/lsp/client.test.ts` ✅ Existing |
-| `lsp/language.ts` | Unit test language ID mapping |
-| `mcp/index.ts` | `test/mcp/` ✅ Existing |
-| `mcp/auth.ts` | `test/mcp/headers.test.ts` ✅ Existing |
-| `plugin/codex.ts` | `test/plugin/codex.test.ts` ✅ Existing |
-| `plugin/copilot.ts` | Integration test with mock Copilot auth |
+| Module | Strategy | Status |
+|---|---|---|
+| `cli/cmd/*.ts` | Test command argument parsing in isolation (no process.exit) | ❌ Integration-heavy |
+| `lsp/client.ts` | `test/lsp/client.test.ts` ✅ Existing | ✅ Existing |
+| `lsp/language.ts` | Unit test language ID mapping | ✅ Added |
+| `mcp/index.ts` | `test/mcp/` ✅ Existing | ✅ Existing |
+| `mcp/auth.ts` | `test/mcp/headers.test.ts` ✅ Existing | ✅ Existing |
+| `plugin/codex.ts` | `test/plugin/codex.test.ts` ✅ Existing | ✅ Existing |
+| `plugin/copilot.ts` | Integration test with mock Copilot auth | ❌ Integration-heavy |
 
 ---
 

@@ -30,7 +30,7 @@ function model(id: string): Provider.Model {
 }
 
 describe("SystemPrompt.instructions", () => {
-  test("returns non-empty string", () => {
+  test("returns non-empty string (codex header)", () => {
     const result = SystemPrompt.instructions()
     expect(typeof result).toBe("string")
     expect(result.length).toBeGreaterThan(0)
