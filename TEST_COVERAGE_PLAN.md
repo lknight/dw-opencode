@@ -166,11 +166,11 @@ All pure utility functions with no side effects. These have 100% line coverage n
 
 ### Remaining Session (Phase 5 TODO):
 
-| Source File | Recommended Approach |
-|---|---|
-| `session/system.ts` | Unit test `SystemPrompt.provider()` dispatch logic |
-| `session/summary.ts` | Requires live AI model; use stub |
-| `session/processor.ts` | Core agent loop; full integration test needed |
+| Source File | Recommended Approach | Status |
+|---|---|---|
+| `session/system.ts` | Unit test `SystemPrompt.provider()` dispatch logic | ✅ Added |
+| `session/summary.ts` | `computeDiff()` with fixtures, `diff()` with Storage, `unquoteGitPath` via diff | ✅ Added |
+| `session/processor.ts` | Core agent loop; full integration test needed | ❌ Excluded (requires live AI API) |
 
 ---
 
@@ -204,19 +204,19 @@ All server routes require a running Hono server instance. Use `Server.createApp(
 
 ---
 
-## Phase 7: CLI, LSP, MCP, Plugin
+## Phase 7: CLI, LSP, MCP, Plugin — PARTIALLY COMPLETE
 
 These modules are either integration-heavy or require external processes.
 
-| Module | Strategy |
-|---|---|
-| `cli/cmd/*.ts` | Test command argument parsing in isolation (no process.exit) |
-| `lsp/client.ts` | `test/lsp/client.test.ts` ✅ Existing |
-| `lsp/language.ts` | Unit test language ID mapping |
-| `mcp/index.ts` | `test/mcp/` ✅ Existing |
-| `mcp/auth.ts` | `test/mcp/headers.test.ts` ✅ Existing |
-| `plugin/codex.ts` | `test/plugin/codex.test.ts` ✅ Existing |
-| `plugin/copilot.ts` | Integration test with mock Copilot auth |
+| Module | Strategy | Status |
+|---|---|---|
+| `cli/cmd/*.ts` | Test command argument parsing in isolation (no process.exit) | ❌ Integration-heavy |
+| `lsp/client.ts` | `test/lsp/client.test.ts` ✅ Existing | ✅ Existing |
+| `lsp/language.ts` | Unit test language ID mapping | ✅ Added |
+| `mcp/index.ts` | `test/mcp/` ✅ Existing | ✅ Existing |
+| `mcp/auth.ts` | `test/mcp/headers.test.ts` ✅ Existing | ✅ Existing |
+| `plugin/codex.ts` | `test/plugin/codex.test.ts` ✅ Existing | ✅ Existing |
+| `plugin/copilot.ts` | Integration test with mock Copilot auth | ❌ Integration-heavy |
 
 ---
 

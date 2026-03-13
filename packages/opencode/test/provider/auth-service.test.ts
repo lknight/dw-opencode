@@ -81,7 +81,7 @@ describe("OauthCallbackFailed", () => {
     expect(OauthCallbackFailed.isInstance(other)).toBe(false)
   })
 
-  test("isInstance rejects plain objects", () => {
+  test("isInstance matches by name property (identifies same name)", () => {
     expect(OauthCallbackFailed.isInstance({ name: "ProviderAuthOauthCallbackFailed" })).toBe(true)
     expect(OauthCallbackFailed.isInstance({ name: "other" })).toBe(false)
   })
